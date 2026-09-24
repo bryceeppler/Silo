@@ -13,14 +13,13 @@
   (M4 Pro, 2560x1440 panel, Graveyard Keeper 2 / Unity 6, GPTK 4.0b2): before, `desktop 1440x900` and no mode
   above 1440x900; after, Silo launched the client with `/desktop=Silo,2560x1440`, the game offered
   `2560x1440`, and the CEF UI still painted.
-  - **Retina handling:** the size is in wine's unit for the bottle's Retina mode
-    (`DesktopGeometry.mainScreen(retinaMode:)`, fed the live `BackendConfig.retinaMode` by `AppEnvironment`).
-    With `winemac.drv`'s `RetinaMode` off (the default) one wine pixel is one macOS point, so a 1512x982-point
-    panel at 2x gets `1512x982`, not a `3024x1964` desktop twice the visible screen; with it on, backing pixels.
-    Not yet confirmed on a Retina panel with Retina mode off.
-  - **Follow-up (NOT done):** the opt-in per-game virtual desktop (`GameLibraryViewModel` →
-    `DesktopGeometry.mainScreen()`) still always sizes in backing pixels, so it shares the same Retina-off
-    doubling; route it through `mainScreen(retinaMode:)` too.
+  - **Why this isn't covered by `aec535a` (#5):** the `SiloGame` desktop only applies once a game has asked
+    for an unavailable mode (`needsVirtualDesktop`); the default rootless launch still inherits the client's
+    desktop, which is what 0.4.10 capped.
+  - **Pixels, not points, checked on a 2x panel with Retina mode off:** a `5120x2880` and a `2560x1440`
+    client desktop behaved identically — the game's window was exactly the screen (2560x1440 points) and its
+    largest mode was 2560x1440, because wine never reports a mode beyond the real screen. So backing pixels
+    (right with Retina mode on) cost nothing with it off; the Steam window stayed 1280x800 either way.
 - **🔧 Three fixes ported from Dino0005' fork of Silo (2026-08-05; 520 tests green, zero warnings).** The
   fork (branched 2026-07-15, so it predates the whole DXVK backend) was reviewed commit by commit; most of it
   was rejected — an updater repointed at the fork, a script that lifts Wine out of an installed CrossOver.app
@@ -1870,7 +1869,6 @@
 - 2026-06-26 — Custom `URLSession` GitHub-Releases updater instead of Sparkle to keep `Package.swift` dependency-free.
 
 ## Known follow-ups (non-blocking)
-- `BackendConfig.retinaMode` can diverge from the prefix's `winemac.drv` `RetinaMode`: toggling Retina before the Steam bottle is set up saves the preference but skips the registry write (not re-applied by setup), so the Steam client's desktop is sized in the wrong unit on a 2x panel.
 - DiscoveryEngine skips Windows-style (`C:\...`) library paths in `libraryfolders.vdf`; only host-absolute (`/...`) extra libraries are scanned. In the single-downloader model games land in the primary C: library (always scanned), so this is sufficient for v1. Add Wine `dosdevices` drive-letter translation if cross-drive libraries are needed.
 - Co-resident logged-in Steam: the real "Steam client in the game's prefix" answer is now the **shared Steam bottle** (`SteamBottle` + `SteamClientSession` run one logged-in Windows Steam client that all co-resident Steam games reach). The old per-game presence strategies `.sharedSteamClient` and `.emulatorStub` are **removed** — `SteamPresenceStrategy` has only `.none` + `.steamAppIDFile` (unknown/legacy raw values decode to `.none`). Constraint #7 still bars bundling any emulator.
 

@@ -17,29 +17,13 @@ public enum DesktopGeometry {
     /// than the display, which is the very capping this resolution exists to undo.
     ///
     /// `NSScreen.frame` reports **points**; a Retina panel's real pixel count is that times
-    /// `backingScaleFactor` (a 1512×982-point MacBook Pro panel at 2x is 3024×1964 pixels). This always
-    /// returns pixels, which assumes `winemac.drv`'s `RetinaMode` is on; with it off wine works in points —
-    /// see `mainScreen(retinaMode:)`, and the per-game desktop follow-up in `STATUS.md`.
+    /// `backingScaleFactor` (a 1512×982-point MacBook Pro panel at 2x is 3024×1964 pixels). Pixels are what
+    /// the virtual desktop needs — wine renders its desktop window at the panel's native resolution, not at
+    /// its point size, so passing points would hand the game a quarter of the display.
     @MainActor
     public static func mainScreen(_ screen: NSScreen? = NSScreen.main ?? NSScreen.screens.first) -> String? {
-        mainScreen(retinaMode: true, screen)
-    }
-
-    /// The main display's size in the unit wine's desktop is measured in, which `winemac.drv`'s `RetinaMode`
-    /// decides: off (Silo's default), one wine pixel is one macOS **point**, so a desktop sized in backing
-    /// pixels would be twice the visible screen on a 2x panel; on, wine works in backing **pixels**. The
-    /// Steam client's desktop uses this because it becomes the display every co-resident game sees.
-    @MainActor
-    public static func mainScreen(
-        retinaMode: Bool, _ screen: NSScreen? = NSScreen.main ?? NSScreen.screens.first
-    ) -> String? {
         guard let screen else { return nil }
-        return geometry(points: screen.frame.size, scale: screen.backingScaleFactor, retinaMode: retinaMode)
-    }
-
-    /// `geometry(points:scale:)` in wine's unit: the backing pixels with `retinaMode` on, the points without.
-    static func geometry(points: CGSize, scale: CGFloat, retinaMode: Bool) -> String? {
-        geometry(points: points, scale: retinaMode ? scale : 1)
+        return geometry(points: screen.frame.size, scale: screen.backingScaleFactor)
     }
 
     /// The pixel-geometry arithmetic, split out from `NSScreen` so it is testable without a display: an

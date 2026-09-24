@@ -629,8 +629,8 @@ public struct SteamBottle: Sendable {
 
     /// Launch the bottle's Steam client detached, inside a Wine virtual desktop (so CEF presents on our
     /// `winemac.drv` — see `fallbackDesktopGeometry`), with the verified software-GL CEF flags + env.
-    /// - Parameter desktopGeometry: the desktop size in wine's unit for the bottle's Retina mode
-    ///   (`DesktopGeometry.mainScreen(retinaMode:)`); nil uses `fallbackDesktopGeometry`.
+    /// - Parameter desktopGeometry: the desktop size in real screen pixels (`DesktopGeometry.mainScreen()`);
+    ///   nil uses `fallbackDesktopGeometry`.
     @discardableResult
     public func launchSteam(wine: URL?, desktopGeometry: String? = nil) async throws -> Int32 {
         guard let wine else { throw BottleError.wineNotConfigured }
