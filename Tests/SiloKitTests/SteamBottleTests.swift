@@ -54,7 +54,7 @@ struct SteamBottleTests {
         #expect(call.detached)
         #expect(call.executable.path == "/w/wine64")                      // the loader directly
         #expect(call.arguments.first == "explorer")                       // virtual desktop (CEF presents)
-        #expect(call.arguments.contains { $0.hasPrefix("/desktop=") })
+        #expect(call.arguments.contains("/desktop=Silo,1440x900"))        // no screen given: the fallback
         #expect(call.arguments.contains(paths.steamBottleExe.path))
         #expect(call.arguments.contains("-cef-in-process-gpu"))           // NOT --single-process
         #expect(call.environment["WINEPREFIX"] == paths.steamBottle.path)

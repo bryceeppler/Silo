@@ -3,6 +3,16 @@
 > Updated every iteration. `CLAUDE.md` is the contract; this is the state.
 
 ## Now
+- **🐛 The Steam client's 1440x900 virtual desktop capped every co-resident game at 1440x900 (2026-09-23;
+  526 tests green).** While the client's `explorer /desktop=Silo,<size>` is up, wine reports that desktop as
+  the display to every process in the shared bottle — so a ROOTLESS game (the default path) logged
+  `desktop 1440x900` on a 2560x1440 panel and its resolution list stopped at 1440x900. The fixed
+  `SteamBottle.desktopGeometry` is now `fallbackDesktopGeometry` (no-screen only), and `SteamClientSession`
+  sizes the client's desktop to `DesktopGeometry.mainScreen()` — the same helper game desktops already use
+  (injectable as `screenGeometry` so the regression test pins a screen without a display). Verified on-device
+  (M4 Pro, 2560x1440 panel, Graveyard Keeper 2 / Unity 6, GPTK 4.0b2): before, `desktop 1440x900` and no mode
+  above 1440x900; after, Silo launched the client with `/desktop=Silo,2560x1440`, the game offered
+  `2560x1440`, and the CEF UI still painted.
 - **🔧 Three fixes ported from Dino0005' fork of Silo (2026-08-05; 520 tests green, zero warnings).** The
   fork (branched 2026-07-15, so it predates the whole DXVK backend) was reviewed commit by commit; most of it
   was rejected — an updater repointed at the fork, a script that lifts Wine out of an installed CrossOver.app

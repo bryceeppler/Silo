@@ -47,7 +47,7 @@ struct VirtualDesktopFallbackTests {
     @Test("a game's desktop is a DIFFERENT desktop from the Steam client's, so it can have its own size")
     func gameDesktopIsNotTheSteamClientDesktop() {
         #expect(LaunchOrchestrator.gameDesktopName != "Silo")
-        #expect(LaunchOrchestrator.fallbackGameDesktopGeometry != SteamBottle.desktopGeometry)
+        #expect(LaunchOrchestrator.fallbackGameDesktopGeometry != SteamBottle.fallbackDesktopGeometry)
     }
 
     @Test("the real screen's pixel geometry is what the desktop is sized to, with a sane fallback")

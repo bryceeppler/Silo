@@ -157,8 +157,8 @@ public struct LaunchOrchestrator: Sendable {
     static let gameDesktopName = "SiloGame"
 
     /// Geometry for a game's virtual desktop when the caller couldn't resolve the real screen (a headless
-    /// test, or an off-main call). Explicitly NOT `SteamBottle.desktopGeometry`: that 1440x900 is a verified
-    /// workaround for the Steam client's CEF window, and inheriting it for a GAME capped it at a fraction of
+    /// test, or an off-main call). Explicitly NOT `SteamBottle.fallbackDesktopGeometry`: that 1440x900 is the
+    /// Steam client's no-screen CEF-window fallback, and inheriting it for a GAME capped it at a fraction of
     /// a Retina panel — the fallback was making the display worse in the very path meant to fix it.
     static let fallbackGameDesktopGeometry = "1920x1080"
 

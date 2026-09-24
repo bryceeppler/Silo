@@ -213,4 +213,25 @@ struct SteamClientSessionTests {
 
         #expect(!fake.invocations.contains { $0.detached })   // never launched Steam — nothing to download
     }
+
+    /// Regression: the client's virtual desktop is the display every co-resident game sees. At the old fixed
+    /// 1440x900 a rootless Unity game on a 2560x1440 screen logged `desktop 1440x900` and could offer no
+    /// resolution above it, so bringing Steam up must size the desktop to the screen.
+    @Test("bringing Steam up sizes the client's virtual desktop to the screen")
+    func steamDesktopMatchesScreen() async throws {
+        let tmp = try TempDir(); defer { tmp.cleanup() }
+        let paths = AppPaths(supportDir: tmp.url.appendingPathComponent("Silo"))
+        let fake = FakeProcessRunner()
+        let session = SteamClientSession(
+            bottle: SteamBottle(runner: fake, session: FakeURLProtocol.makeSession(), paths: paths),
+            orchestrator: LaunchOrchestrator(runner: fake, linker: GraphicsLinker()),
+            screenGeometry: { "2560x1440" })
+        session.updateWine(URL(fileURLWithPath: "/w/wine64"))
+        session.readinessTimeout = 0
+
+        await session.ensureRunning()
+
+        let launch = try #require(fake.invocations.last { $0.detached })
+        #expect(launch.arguments.prefix(2) == ["explorer", "/desktop=Silo,2560x1440"])
+    }
 }

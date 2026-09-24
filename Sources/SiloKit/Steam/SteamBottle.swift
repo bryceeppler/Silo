@@ -615,19 +615,27 @@ public struct SteamBottle: Sendable {
         "-cef-disable-sandbox", "-no-cef-sandbox", "-noverifyfiles", "-norepairfiles",
     ]
 
-    /// Wine virtual-desktop geometry for the Steam client. On Silo's `winemac.drv`, the virtual-desktop ROOT
-    /// window presents reliably, whereas a rootless CEF surface (SwiftShader-rendered but composited as a
-    /// layered/child window) does NOT paint — it stays black even though rendering succeeds. So Steam is
-    /// launched inside `explorer /desktop=` to get a presentable window. (Vineport runs rootless because
-    /// Gcenx's winemac.drv handles it; ours doesn't.) Games still launch rootless under GPTK.
-    public static let desktopGeometry = "1440x900"
+    /// Fallback Wine virtual-desktop geometry for the Steam client, used only when there's no screen to size
+    /// it to. On Silo's `winemac.drv`, the virtual-desktop ROOT window presents reliably, whereas a rootless
+    /// CEF surface (SwiftShader-rendered but composited as a layered/child window) does NOT paint — it stays
+    /// black even though rendering succeeds. So Steam is launched inside `explorer /desktop=` to get a
+    /// presentable window. (Vineport runs rootless because Gcenx's winemac.drv handles it; ours doesn't.)
+    /// Games still launch rootless under GPTK.
+    ///
+    /// The desktop's size is NOT private to the client: while it's up, wine reports it as the display to
+    /// every process in the shared bottle, so a rootless game logs `desktop <size>` and caps its resolution
+    /// list there. `launchSteam` therefore sizes it to the real screen; this is only the no-screen fallback.
+    public static let fallbackDesktopGeometry = "1440x900"
 
     /// Launch the bottle's Steam client detached, inside a Wine virtual desktop (so CEF presents on our
-    /// `winemac.drv` — see `desktopGeometry`), with the verified software-GL CEF flags + env.
+    /// `winemac.drv` — see `fallbackDesktopGeometry`), with the verified software-GL CEF flags + env.
+    /// - Parameter desktopGeometry: the desktop size in real screen pixels (`DesktopGeometry.mainScreen()`);
+    ///   nil uses `fallbackDesktopGeometry`.
     @discardableResult
-    public func launchSteam(wine: URL?) async throws -> Int32 {
+    public func launchSteam(wine: URL?, desktopGeometry: String? = nil) async throws -> Int32 {
         guard let wine else { throw BottleError.wineNotConfigured }
-        let args = ["explorer", "/desktop=Silo,\(Self.desktopGeometry)", exe.path]
+        let size = desktopGeometry ?? Self.fallbackDesktopGeometry
+        let args = ["explorer", "/desktop=Silo,\(size)", exe.path]
             + Self.cefRenderArgs
         return try await runner.spawnDetached(
             executable: wine, arguments: args,

@@ -21,10 +21,17 @@ public final class SteamClientSession {
     var readinessTimeout: Double = 20
     /// The last launch failure message (for the UI), cleared on a successful launch.
     public private(set) var launchError: String?
+    /// The real screen's pixel geometry the client's virtual desktop is sized to (see `launchSteamProcess`).
+    /// Injectable so tests can pin a screen without a display.
+    private let screenGeometry: @MainActor () -> String?
 
-    public init(bottle: SteamBottle, orchestrator: LaunchOrchestrator) {
+    public init(
+        bottle: SteamBottle, orchestrator: LaunchOrchestrator,
+        screenGeometry: @escaping @MainActor () -> String? = { DesktopGeometry.mainScreen() }
+    ) {
         self.bottle = bottle
         self.orchestrator = orchestrator
+        self.screenGeometry = screenGeometry
     }
 
     /// Defensive teardown: cancel any in-flight launch so it can't outlive the session (a process-lifetime
@@ -242,7 +249,8 @@ public final class SteamClientSession {
     private func launchSteamProcess() async -> Int32? {
         do {
             if let wine = wineBinary { try bottle.installWebHelperWrapper(wine: wine) }
-            return try await bottle.launchSteam(wine: wineBinary)
+            // Sized to the real screen: the client's desktop becomes the display every co-resident game sees.
+            return try await bottle.launchSteam(wine: wineBinary, desktopGeometry: screenGeometry())
         } catch {
             launchError = (error as NSError).localizedDescription
             return nil
