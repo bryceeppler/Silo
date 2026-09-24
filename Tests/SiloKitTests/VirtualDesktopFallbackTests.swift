@@ -75,8 +75,8 @@ struct VirtualDesktopFallbackTests {
     }
 }
 
-/// The points→pixels conversion is the whole reason this type exists: wine sizes its desktop window in real
-/// pixels, so handing it `NSScreen.frame` unscaled would give a Retina game a quarter of the panel.
+/// Resolves `NSScreen.frame` points to the unit wine uses for its desktop.
+/// Wine uses points with Retina mode off and backing pixels with Retina mode on.
 @Suite("Desktop geometry resolution")
 struct DesktopGeometryTests {
 
