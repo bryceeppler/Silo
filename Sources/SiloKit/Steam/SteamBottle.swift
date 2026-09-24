@@ -624,7 +624,8 @@ public struct SteamBottle: Sendable {
     ///
     /// The desktop's size is NOT private to the client: while it's up, wine reports it as the display to
     /// every process in the shared bottle, so a rootless game logs `desktop <size>` and caps its resolution
-    /// list there. `launchSteam` therefore sizes it to the real screen; this is only the no-screen fallback.
+    /// list there. `SteamClientSession` therefore passes the real screen's size to `launchSteam`; this is only
+    /// the no-screen fallback.
     public static let fallbackDesktopGeometry = "1440x900"
 
     /// Launch the bottle's Steam client detached, inside a Wine virtual desktop (so CEF presents on our
