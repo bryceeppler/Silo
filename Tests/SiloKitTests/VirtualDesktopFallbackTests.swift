@@ -101,6 +101,18 @@ struct DesktopGeometryTests {
             == "1707x960")
     }
 
+    @Test("with Retina mode off wine works in points, so a 2x panel is NOT doubled")
+    func retinaModeOffUsesPoints() {
+        #expect(DesktopGeometry.geometry(points: CGSize(width: 1512, height: 982), scale: 2, retinaMode: false)
+            == "1512x982")
+    }
+
+    @Test("with Retina mode on wine works in backing pixels")
+    func retinaModeOnUsesPixels() {
+        #expect(DesktopGeometry.geometry(points: CGSize(width: 1512, height: 982), scale: 2, retinaMode: true)
+            == "3024x1964")
+    }
+
     @Test("a screen reporting nothing usable is nil — the caller's fallback, not a 0x0 desktop")
     func nonPositiveIsNil() {
         #expect(DesktopGeometry.geometry(points: .zero, scale: 2) == nil)
@@ -112,6 +124,7 @@ struct DesktopGeometryTests {
     @Test("no screen at all resolves to nil, so the launch falls back instead of throwing")
     func noScreenIsNil() {
         #expect(DesktopGeometry.mainScreen(nil) == nil)
+        #expect(DesktopGeometry.mainScreen(retinaMode: false, nil) == nil)
     }
 }
 

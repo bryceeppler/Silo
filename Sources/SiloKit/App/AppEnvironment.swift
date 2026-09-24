@@ -92,7 +92,9 @@ public final class AppEnvironment {
         // cabinets, Steam) are stubbable — without it they went to `URLSession.shared`, i.e. the real
         // network, from inside the setup tests.
         let steamBottle = SteamBottle(runner: runner, session: runtimeSession, paths: paths)
-        let steamClientSession = SteamClientSession(bottle: steamBottle, orchestrator: orchestrator)
+        let steamClientSession = SteamClientSession(
+            bottle: steamBottle, orchestrator: orchestrator,
+            screenGeometry: { DesktopGeometry.mainScreen(retinaMode: backendSettings.config.retinaMode) })
         let steamBottleVM = SteamBottleViewModel(
             bottle: steamBottle, session: steamClientSession)
         self.steamClientSession = steamClientSession

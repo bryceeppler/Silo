@@ -13,6 +13,14 @@
   (M4 Pro, 2560x1440 panel, Graveyard Keeper 2 / Unity 6, GPTK 4.0b2): before, `desktop 1440x900` and no mode
   above 1440x900; after, Silo launched the client with `/desktop=Silo,2560x1440`, the game offered
   `2560x1440`, and the CEF UI still painted.
+  - **Retina handling:** the size is in wine's unit for the bottle's Retina mode
+    (`DesktopGeometry.mainScreen(retinaMode:)`, fed the live `BackendConfig.retinaMode` by `AppEnvironment`).
+    With `winemac.drv`'s `RetinaMode` off (the default) one wine pixel is one macOS point, so a 1512x982-point
+    panel at 2x gets `1512x982`, not a `3024x1964` desktop twice the visible screen; with it on, backing pixels.
+    Not yet confirmed on a Retina panel with Retina mode off.
+  - **Follow-up (NOT done):** the opt-in per-game virtual desktop (`GameLibraryViewModel` →
+    `DesktopGeometry.mainScreen()`) still always sizes in backing pixels, so it shares the same Retina-off
+    doubling; route it through `mainScreen(retinaMode:)` too.
 - **🔧 Three fixes ported from Dino0005' fork of Silo (2026-08-05; 520 tests green, zero warnings).** The
   fork (branched 2026-07-15, so it predates the whole DXVK backend) was reviewed commit by commit; most of it
   was rejected — an updater repointed at the fork, a script that lifts Wine out of an installed CrossOver.app

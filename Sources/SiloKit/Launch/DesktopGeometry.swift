@@ -26,6 +26,23 @@ public enum DesktopGeometry {
         return geometry(points: screen.frame.size, scale: screen.backingScaleFactor)
     }
 
+    /// The main display's size in the unit wine's desktop is measured in, which `winemac.drv`'s `RetinaMode`
+    /// decides: off (Silo's default), one wine pixel is one macOS **point**, so a desktop sized in backing
+    /// pixels would be twice the visible screen on a 2x panel; on, wine works in backing **pixels**. The
+    /// Steam client's desktop uses this because it becomes the display every co-resident game sees.
+    @MainActor
+    public static func mainScreen(
+        retinaMode: Bool, _ screen: NSScreen? = NSScreen.main ?? NSScreen.screens.first
+    ) -> String? {
+        guard let screen else { return nil }
+        return geometry(points: screen.frame.size, scale: screen.backingScaleFactor, retinaMode: retinaMode)
+    }
+
+    /// `geometry(points:scale:)` in wine's unit: the backing pixels with `retinaMode` on, the points without.
+    static func geometry(points: CGSize, scale: CGFloat, retinaMode: Bool) -> String? {
+        geometry(points: points, scale: retinaMode ? scale : 1)
+    }
+
     /// The pixel-geometry arithmetic, split out from `NSScreen` so it is testable without a display: an
     /// `NSScreen` cannot be constructed, so a test that could only pass `nil` or the real panel would never
     /// pin the points→pixels conversion this whole type exists for.

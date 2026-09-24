@@ -21,13 +21,15 @@ public final class SteamClientSession {
     var readinessTimeout: Double = 20
     /// The last launch failure message (for the UI), cleared on a successful launch.
     public private(set) var launchError: String?
-    /// The real screen's pixel geometry the client's virtual desktop is sized to (see `launchSteamProcess`).
-    /// Injectable so tests can pin a screen without a display.
+    /// The screen geometry the client's virtual desktop is sized to (see `launchSteamProcess`), in wine's
+    /// unit for the bottle's Retina mode (`DesktopGeometry.mainScreen(retinaMode:)`). The default matches
+    /// `BackendConfig`'s default (Retina off); `AppEnvironment` passes the live setting. Injectable so tests
+    /// can pin a screen without a display.
     private let screenGeometry: @MainActor () -> String?
 
     public init(
         bottle: SteamBottle, orchestrator: LaunchOrchestrator,
-        screenGeometry: @escaping @MainActor () -> String? = { DesktopGeometry.mainScreen() }
+        screenGeometry: @escaping @MainActor () -> String? = { DesktopGeometry.mainScreen(retinaMode: false) }
     ) {
         self.bottle = bottle
         self.orchestrator = orchestrator
