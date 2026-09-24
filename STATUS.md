@@ -1870,6 +1870,7 @@
 - 2026-06-26 — Custom `URLSession` GitHub-Releases updater instead of Sparkle to keep `Package.swift` dependency-free.
 
 ## Known follow-ups (non-blocking)
+- `BackendConfig.retinaMode` can diverge from the prefix's `winemac.drv` `RetinaMode`: toggling Retina before the Steam bottle is set up saves the preference but skips the registry write (not re-applied by setup), so the Steam client's desktop is sized in the wrong unit on a 2x panel.
 - DiscoveryEngine skips Windows-style (`C:\...`) library paths in `libraryfolders.vdf`; only host-absolute (`/...`) extra libraries are scanned. In the single-downloader model games land in the primary C: library (always scanned), so this is sufficient for v1. Add Wine `dosdevices` drive-letter translation if cross-drive libraries are needed.
 - Co-resident logged-in Steam: the real "Steam client in the game's prefix" answer is now the **shared Steam bottle** (`SteamBottle` + `SteamClientSession` run one logged-in Windows Steam client that all co-resident Steam games reach). The old per-game presence strategies `.sharedSteamClient` and `.emulatorStub` are **removed** — `SteamPresenceStrategy` has only `.none` + `.steamAppIDFile` (unknown/legacy raw values decode to `.none`). Constraint #7 still bars bundling any emulator.
 
