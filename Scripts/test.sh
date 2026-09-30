@@ -7,6 +7,8 @@
 # natively and these dirs simply don't exist, so we add the flags only when present.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+set -a; . ./versions.env; set +a
+. ./Scripts/sdk-env.sh
 
 DEV="$(xcode-select -p)"
 FW="$DEV/Library/Developer/Frameworks"

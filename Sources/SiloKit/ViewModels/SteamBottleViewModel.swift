@@ -69,6 +69,11 @@ public final class SteamBottleViewModel {
         let downloads = bottle.startSetupDownloads()
         defer { busy = false; downloads.cleanup() }
         do {
+            // Rosetta first — every wine spawn below needs it, and a clean macOS install has none.
+            if bottle.needsRosetta {
+                status = "Installing Rosetta 2…"
+                await bottle.ensureRosetta()
+            }
             // Step 3: download the Steam installer up front so a network failure surfaces before booting.
             status = "Downloading Steam…"
             _ = try await bottle.downloadSteamInstaller()

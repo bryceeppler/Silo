@@ -15,21 +15,32 @@ struct OnboardingView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "wineglass").font(.system(size: 46)).foregroundStyle(.tint)
                     Text("Welcome to Silo").font(.largeTitle.bold())
-                    Text("Two quick steps to get playing.").foregroundStyle(.secondary)
+                    Text(env.rosettaWasMissing ? "Three quick steps to get playing." : "Two quick steps to get playing.")
+                        .foregroundStyle(.secondary)
                 }
 
                 VStack(spacing: 12) {
+                    // Only on a Mac without Rosetta (a clean macOS install has none) — the runtimes are x86_64.
+                    if env.rosettaWasMissing {
+                        StepRow(
+                            number: 1, title: "Install Rosetta 2",
+                            subtitle: "Required to run the Wine runtime",
+                            done: env.rosettaReady, busy: env.rosettaInstalling,
+                            actionLabel: "Install",
+                            action: { Task { await env.installRosetta() } })
+                    }
+
                     StepRow(
-                        number: 1, title: "Import Game Porting Toolkit",
+                        number: stepOffset + 1, title: "Import Game Porting Toolkit",
                         subtitle: "Apple's GPTK4 .dmg",
                         done: env.gptkReady, busy: gptk.isImporting,
                         actionLabel: "Choose .dmg",
                         action: { if let dmg = chooseDiskImage() { Task { await env.gptkManager.importGPTK(from: dmg) } } })
 
                     StepRow(
-                        number: 2, title: "Set up",
+                        number: stepOffset + 2, title: "Set up",
                         subtitle: "Download and configure the Steam client",
-                        done: env.steamReady, busy: env.setupBusy, locked: !env.gptkReady,
+                        done: env.steamReady, busy: env.setupBusy, locked: !env.gptkReady || !env.rosettaReady,
                         actionLabel: "Set up",
                         action: { Task { await env.runFullSetup() } })
                 }
@@ -54,7 +65,7 @@ struct OnboardingView: View {
                 } else {
                     // Idle: surface the final/error status (setup done, or a Wine/GPTK failure).
                     let message = steam.status.isEmpty
-                        ? (runtime.statusMessage ?? env.dxmtRuntime.statusMessage
+                        ? (env.rosettaMessage ?? runtime.statusMessage ?? env.dxmtRuntime.statusMessage
                             ?? env.dxvkRuntime.statusMessage
                             ?? gptk.statusMessage ?? backend.statusMessage) : steam.status
                     VStack(spacing: 6) {
@@ -90,6 +101,8 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity)
         }
     }
+
+    private var stepOffset: Int { env.rosettaWasMissing ? 1 : 0 }
 
     /// The status of whichever setup phase is active, for the line under the progress bar: the bottle's own
     /// status once setUp is running (component prompts + warm-up), else the in-flight runtime download.

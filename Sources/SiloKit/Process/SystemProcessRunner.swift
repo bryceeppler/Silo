@@ -109,7 +109,7 @@ public struct SystemProcessRunner: ProcessRunning {
         process.standardOutput = outHandle
         process.standardError = errHandle
 
-        try process.run()
+        do { try process.run() } catch { throw Rosetta.translating(error) }
         process.waitUntilExit()
 
         let outData = (try? Data(contentsOf: outURL)) ?? Data()
@@ -143,7 +143,7 @@ public struct SystemProcessRunner: ProcessRunning {
         // Detached: we do not waitUntilExit. On macOS a child outlives its parent unless explicitly
         // signalled, so the game keeps running after Silo quits. The child dup's the log fd at spawn,
         // so closing our handle afterward is safe.
-        try process.run()
+        do { try process.run() } catch { throw Rosetta.translating(error) }
         return process.processIdentifier
     }
 }

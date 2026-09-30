@@ -14,6 +14,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 set -a; . "$ROOT/versions.env"; set +a
+. "$ROOT/Scripts/sdk-env.sh"
 VER="${1:-$CROSSOVER_VERSION}"
 TAG="${2:-wine-cx-$VER}"
 WORK="$ROOT/.wine-build"

@@ -19,6 +19,8 @@ public struct SteamBottle: Sendable {
     /// guarantees no gaps), while tests inject `[:]` to exercise the install flow with stub bytes.
     private let coreFontDigests: [String: String]
     private let d3dCabDigests: [String: String]
+    /// Whether Rosetta 2 is present (injected so setup tests don't depend on the host having it).
+    private let rosettaInstalled: @Sendable () -> Bool
     // Computed (not stored): FileManager isn't Sendable, but the shared instance is fine to use.
     private var fileManager: FileManager { .default }
 
@@ -28,9 +30,11 @@ public struct SteamBottle: Sendable {
         d3dCabDigests: [String: String] = [
             Silo.d3dCompiler47X64Member: Silo.d3dCompiler47X64CabSHA256,
             Silo.d3dCompiler47X86Member: Silo.d3dCompiler47X86CabSHA256,
-        ]
+        ],
+        rosettaInstalled: @escaping @Sendable () -> Bool = { Rosetta.isInstalled() }
     ) {
         self.runner = runner
+        self.rosettaInstalled = rosettaInstalled
         self.session = session
         self.paths = paths
         self.coreFontDigests = coreFontDigests
@@ -732,6 +736,19 @@ public struct SteamBottle: Sendable {
     /// Download the Steam installer into the bottle (idempotent — returns the cached `SteamSetup.exe`). The
     /// onboarding flow calls this as its own early "download only" step so a network failure surfaces before
     /// the prefix is booted.
+    /// Install Rosetta 2 when it's missing — the wine runtime is x86_64, so without it every spawn fails
+    /// with "Bad CPU type in executable" (issue #7). Best-effort: the probe is an inferred signal, so a failed
+    /// install never blocks setup; if Rosetta really is absent, the first wine spawn reports it plainly
+    /// (`Rosetta.RosettaError.notInstalled`). Returns whether an install was attempted.
+    var needsRosetta: Bool { !rosettaInstalled() }
+
+    @discardableResult
+    func ensureRosetta() async -> Bool {
+        guard needsRosetta else { return false }
+        try? await Rosetta.install(runner: runner)
+        return true
+    }
+
     func downloadSteamInstaller() async throws -> URL {
         let dest = prefixDir.appendingPathComponent("SteamSetup.exe")
         if fileManager.fileExists(atPath: dest.path) { return dest }

@@ -14,6 +14,8 @@ struct LibraryGridView: View {
     /// required steps doesn't yank the user straight into the library — they click "Done" when ready.
     /// Persisted so it doesn't reappear.
     @AppStorage("onboardingDone") private var onboardingDone = false
+    /// "Not Now" on the Rosetta prompt — per app session, so it asks again next launch.
+    @State private var rosettaPromptDismissed = false
 
     var body: some View {
         @Bindable var lib = env.gameLibrary
@@ -45,6 +47,16 @@ struct LibraryGridView: View {
                     .help("Finish setup and go to your library")
             }
             Button { openSettings() } label: { Label("Settings", systemImage: "gearshape") }
+        }
+        // A set-up library on a Mac without Rosetta (onboarding has its own step): every launch would fail.
+        .alert("Rosetta 2 is required", isPresented: Binding(
+            get: { showLibrary && env.didBootstrap && !env.rosettaReady && !env.rosettaInstalling
+                && !rosettaPromptDismissed },
+            set: { if !$0 { rosettaPromptDismissed = true } })) {
+            Button("Install") { Task { await env.installRosetta() } }
+            Button("Not Now", role: .cancel) {}
+        } message: {
+            if let message = env.rosettaMessage { Text(message) }
         }
         .sheet(isPresented: $showAddGame) { AddGameSheet() }
         .sheet(item: $settingsTarget) { GameSettingsSheet(game: $0) }

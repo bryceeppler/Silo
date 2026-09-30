@@ -49,10 +49,15 @@ public final class AppEnvironment {
         paths: AppPaths = .standard(),
         runner: ProcessRunning = SystemProcessRunner(),
         updater: Updater? = nil,
-        runtimeSession: URLSession = .shared
+        runtimeSession: URLSession = .shared,
+        rosettaInstalled: @escaping @Sendable () -> Bool = { Rosetta.isInstalled() }
     ) {
         self.paths = paths
         self.runner = runner
+        self.rosettaProbe = rosettaInstalled
+        let rosettaReady = rosettaInstalled()
+        self.rosettaReady = rosettaReady
+        self.rosettaWasMissing = !rosettaReady
         self.wineTools = WineTools(runner: runner)
         let updater = updater ?? Updater(runner: runner)
         self.updater = updater
@@ -91,7 +96,8 @@ public final class AppEnvironment {
         // `runtimeSession` is threaded in so the bottle's own artifact downloads (core fonts, the SDK
         // cabinets, Steam) are stubbable — without it they went to `URLSession.shared`, i.e. the real
         // network, from inside the setup tests.
-        let steamBottle = SteamBottle(runner: runner, session: runtimeSession, paths: paths)
+        let steamBottle = SteamBottle(runner: runner, session: runtimeSession, paths: paths,
+                                      rosettaInstalled: rosettaInstalled)
         let steamClientSession = SteamClientSession(bottle: steamBottle, orchestrator: orchestrator)
         let steamBottleVM = SteamBottleViewModel(
             bottle: steamBottle, session: steamClientSession)
@@ -165,6 +171,7 @@ public final class AppEnvironment {
     public func bootstrap() async {
         guard !didBootstrap, !isBootstrapping else { return }
         isBootstrapping = true
+        rosettaReady = rosettaReady || rosettaProbe()   // installed outside Silo since launch
         let state = await configStore.load()
         backendSettings.config = state.backend
         applyBackend(state.backend)
@@ -246,6 +253,32 @@ public final class AppEnvironment {
     /// a self-update must not overlap — both end in a relaunch/exit).
     func blockedForBottleWork() -> Bool {
         anythingRunning || bottles.busy || updates.isInstalling
+    }
+
+    // MARK: - Rosetta 2 (issue #7 — the x86_64 wine runtime can't run without it)
+
+    private let rosettaProbe: @Sendable () -> Bool
+    public private(set) var rosettaReady: Bool
+    /// Rosetta was missing when Silo started — keeps its onboarding step on screen (ticked "Done") after the
+    /// install, rather than making the step list shift under the user.
+    public let rosettaWasMissing: Bool
+    public private(set) var rosettaInstalling = false
+    public private(set) var rosettaMessage: String?
+
+    /// Install Rosetta via `softwareupdate` (no admin prompt). A successful install counts as ready even if
+    /// the probe disagrees — the probe is an inferred signal, and a false "missing" must never lock setup.
+    public func installRosetta() async {
+        guard !rosettaInstalling else { return }
+        rosettaInstalling = true
+        defer { rosettaInstalling = false }
+        do {
+            try await Rosetta.install(runner: runner)
+            rosettaReady = true
+            rosettaMessage = nil
+        } catch {
+            rosettaReady = rosettaProbe()
+            rosettaMessage = error.localizedDescription
+        }
     }
 
     // MARK: - Setup readiness (drives the Library onboarding)

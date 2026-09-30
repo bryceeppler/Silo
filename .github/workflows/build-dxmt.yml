@@ -65,9 +65,9 @@ concurrency:
 
 jobs:
   build:
-    # macos-26 matches the app build (release.yml) and the runtime's deploy target; it ships Xcode with
+    # xcode-27 (macOS 27 + Xcode 27, pinned via versions.env) matches the app build (release.yml); it ships
     # the Metal toolchain DXMT's shader compile needs.
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 180
     env:
       # DXMT must be x86_64 to match the x86_64 CrossOver Wine + winemetal.so (Rosetta).
@@ -75,6 +75,15 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select Xcode + macOS SDK (versions.env)
+        run: |
+          set -eo pipefail
+          set -a; . ./versions.env; set +a
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+          . ./Scripts/sdk-env.sh
+          echo "SDKROOT=$SDKROOT" >> "$GITHUB_ENV"
+          xcodebuild -version
 
       - name: Resolve versions (versions.env is the single source of truth; inputs override)
         env:
@@ -101,16 +110,11 @@ jobs:
           } >> "$GITHUB_ENV"
           echo "Building $DXMT_REPO@$DXMT_VER against $WINE_TAG → publishing $REL_TAG"
 
-      - name: Select Xcode + ensure Metal toolchain
+      - name: Ensure Metal toolchain
         run: |
           set -eo pipefail
-          # Prefer Xcode 16 (the toolchain DXMT v0.72 is upstream-tested with) if the runner still ships
-          # it; otherwise use the runner's default Xcode (macos-26's Xcode also has the Metal toolchain).
-          shopt -s nullglob
-          xcodes=(/Applications/Xcode_16*.app)
-          if [ ${#xcodes[@]} -gt 0 ]; then sudo xcode-select -s "${xcodes[0]}"; fi
           echo "Using $(xcode-select -p)"
-          # Xcode 16+/26 split the Metal compiler into a separate component: the `metal` binary exists but
+          # Xcode 16+ split the Metal compiler into a separate component: the `metal` binary exists but
           # `metal -c` fails until it's installed. Fetch it (idempotent), then verify by ACTUALLY compiling
           # a probe shader (a bare `-f metal` check is NOT enough — binary present != can compile).
           xcodebuild -downloadComponent MetalToolchain 2>/dev/null || true

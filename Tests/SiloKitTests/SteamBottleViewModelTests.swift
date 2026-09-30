@@ -6,11 +6,12 @@ import Testing
 @Suite("SteamBottleViewModel")
 struct SteamBottleViewModelTests {
 
-    private func make(_ tmp: TempDir)
+    private func make(_ tmp: TempDir, rosettaInstalled: Bool = true)
         -> (SteamBottleViewModel, FakeProcessRunner, AppPaths) {
         let paths = AppPaths(supportDir: tmp.url.appendingPathComponent("Silo"))
         let fake = FakeProcessRunner()
-        let bottle = SteamBottle(runner: fake, session: FakeURLProtocol.makeSession(), paths: paths)
+        let bottle = SteamBottle(runner: fake, session: FakeURLProtocol.makeSession(), paths: paths,
+                                 rosettaInstalled: { rosettaInstalled })
         let session = SteamClientSession(
             bottle: bottle, orchestrator: LaunchOrchestrator(runner: fake, linker: GraphicsLinker()))
         session.readinessTimeout = 0
@@ -24,6 +25,25 @@ struct SteamBottleViewModelTests {
         session.warmUpForceQuitSettle = 0
         let vm = SteamBottleViewModel(bottle: bottle, session: session)
         return (vm, fake, paths)
+    }
+
+    @Test("setUp installs Rosetta before any wine spawn when it's missing (issue #7)")
+    func setUpInstallsRosettaFirst() async throws {
+        let tmp = try TempDir(); defer { tmp.cleanup() }
+        let (vm, fake, _) = make(tmp, rosettaInstalled: false)
+        vm.updateWine(URL(fileURLWithPath: "/opt/wine/bin/wine"))
+        await vm.setUp()
+        #expect(fake.invocations.first?.executable.path == "/usr/sbin/softwareupdate")
+        #expect(fake.invocations.dropFirst().allSatisfy { $0.executable.path != "/usr/sbin/softwareupdate" })
+    }
+
+    @Test("setUp leaves Rosetta alone when it's already installed")
+    func setUpSkipsRosettaWhenPresent() async throws {
+        let tmp = try TempDir(); defer { tmp.cleanup() }
+        let (vm, fake, _) = make(tmp)
+        vm.updateWine(URL(fileURLWithPath: "/opt/wine/bin/wine"))
+        await vm.setUp()
+        #expect(!fake.invocations.contains { $0.executable.path == "/usr/sbin/softwareupdate" })
     }
 
     @Test("steamInstalled is a cache: refreshInstalled() probes off-main; setUp sets it + fires the hook")

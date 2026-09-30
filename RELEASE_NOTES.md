@@ -1,12 +1,11 @@
-# Silo 0.4.10
+# Silo 0.5.0
 
-Three controls that were visibly there but did nothing now work.
+Silo now runs on macOS 27.
 
-- **MetalFX upscaling actually engages.** The per-game toggle set the flag, but GPTK ships its DLSS→MetalFX bridge under a name nothing resolves, so there was never a provider behind the switch. Silo now activates that bridge and makes it resolvable inside the bottle.
-- **The Sync setting is honoured for non-Steam games.** Their settings sheet offered the picker while every launch forced msync regardless. That rule protects the shared Steam bottle's single connection to the Steam client; a manual game has its own isolated bottle and nothing to protect, so the picker now stands as set. Steam games are unchanged.
-- **A game using Wine's virtual desktop gets your display's real resolution.** It was sized at a fixed 1440x900 — the Steam client window's size — so a game falling back to the virtual desktop was capped there and native resolution never appeared in its options. It is now sized to the display in real pixels, on a desktop of its own so it can no longer inherit the client's.
+- **Setup no longer fails with "Bad CPU type in executable."** Silo's Wine runtime needs Rosetta 2, and a clean macOS 27 install doesn't come with it. Onboarding now has an "Install Rosetta 2" step when it's missing, and an existing library asks to install it. No admin password is needed.
+- **Built with Xcode 27 against the macOS 27 SDK.**
 
-Thanks to [@BananaStems](https://github.com/mikaelhug/Silo/pull/5) for reporting the 1440x900 cap on real hardware.
+Thanks for [reporting it](https://github.com/mikaelhug/Silo/issues/7)!
 
 ---
 

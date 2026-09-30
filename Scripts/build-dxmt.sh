@@ -34,6 +34,8 @@ set -a
 # shellcheck disable=SC1091  # versions.env is resolved at runtime, not available to the linter
 . "$ROOT/versions.env"
 set +a
+# shellcheck disable=SC1091
+. "$ROOT/Scripts/sdk-env.sh"
 ARCH="arch -x86_64"          # DXMT must be x86_64 to match the x86_64 CrossOver Wine (Rosetta)
 BREW=/usr/local/bin/brew     # x86_64 Homebrew (so llvm@15 etc. are x86_64, like build-wine.sh)
 

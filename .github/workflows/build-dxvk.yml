@@ -66,13 +66,22 @@ concurrency:
 
 jobs:
   build:
-    # macos-26 matches the app build and ships the Xcode the MoltenVK step needs (Metal shaders).
-    runs-on: macos-26
+    # xcode-27 (macOS 27 + Xcode 27, pinned via versions.env) matches the app build; its Xcode builds MoltenVK.
+    runs-on: xcode-27
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select Xcode + macOS SDK (versions.env)
+        run: |
+          set -eo pipefail
+          set -a; . ./versions.env; set +a
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+          . ./Scripts/sdk-env.sh
+          echo "SDKROOT=$SDKROOT" >> "$GITHUB_ENV"
+          xcodebuild -version
 
       - name: Resolve versions (versions.env is the single source of truth; inputs override)
         env:
@@ -147,7 +156,7 @@ jobs:
           set -eo pipefail
           # Proven on-device 2026-08-04: a STOCK MoltenVK cannot create a D3D device for DXVK at ANY feature
           # level; a patched one works (FL 11_0). So the DXVK runtime ships its own. Needs full Xcode (Metal
-          # shaders) — the macos-26 runner has it.
+          # shaders) — the xcode-27 runner has it.
           # shellcheck disable=SC1091
           set -a; . ./versions.env; set +a
           # CodeWeavers' PATCHED MoltenVK from the crossover-sources tarball (same source build-wine uses).

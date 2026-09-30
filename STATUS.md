@@ -3,8 +3,8 @@
 > Updated every iteration. `CLAUDE.md` is the contract; this is the state.
 
 ## Now
-- **🐛 The Steam client's 1440x900 virtual desktop capped every co-resident game at 1440x900 (2026-09-23;
-  526 tests green).** While the client's `explorer /desktop=Silo,<size>` is up, wine reports that desktop as
+- **🐛 [PR #8](https://github.com/mikaelhug/Silo/pull/8) (bryceeppler) — the Steam client's 1440x900 virtual desktop capped
+  every co-resident game at 1440x900 (merged 2026-09-30; 539 tests green, zero warnings).** While the client's `explorer /desktop=Silo,<size>` is up, wine reports that desktop as
   the display to every process in the shared bottle — so a ROOTLESS game (the default path) logged
   `desktop 1440x900` on a 2560x1440 panel and its resolution list stopped at 1440x900. The fixed
   `SteamBottle.desktopGeometry` is now `fallbackDesktopGeometry` (no-screen only), and `SteamClientSession`
@@ -20,6 +20,29 @@
     client desktop behaved identically — the game's window was exactly the screen (2560x1440 points) and its
     largest mode was 2560x1440, because wine never reports a mode beyond the real screen. So backing pixels
     (right with Retina mode on) cost nothing with it off; the Steam window stayed 1280x800 either way.
+  - **Re-verified in review (M4 Pro MacBook, 1512x982pt @2x + 3440x1440 external, wine-cx-26.3.0):** a rootless
+    `wmic` in the same prefix read 1440x900 while a `Silo,1440x900` desktop was up (1512x982 without it). Wine
+    clamps a desktop ≥ the primary screen down to the screen — 3024x1964, 3440x1440 and 1920x1080 all read as
+    1512x982 with Retina mode off; with it on, the old size capped at 2880x1800. The real bottle client launched
+    through `SteamClientSession` with `/desktop=Silo,3024x1964` and painted, its 700x440 login window centered.
+  - Nit left as-is: `mainScreen()` follows the KEY window's screen while wine's display is the menu-bar screen;
+    only a smaller 1x secondary screen could still cap below the primary (same as the `SiloGame` desktop).
+- **🩹 [Issue #7](https://github.com/mikaelhug/Silo/issues/7) — "Setup failed: Bad CPU type in executable" on macOS 27 (2026-09-26; 535 tests green, zero warnings).**
+  Root cause: **Rosetta 2 not installed** (a clean macOS 27 has none), so every x86_64 wine spawn failed with
+  `EBADARCH`. Not an SDK problem — rebuilding against SDK 27 alone changes nothing (the wine tree is x86_64).
+  - `Rosetta` (`Process/Rosetta.swift`): probe + `softwareupdate --install-rosetta --agree-to-license` (verified
+    on-device: needs NO admin). `SteamBottleViewModel.setUp` installs it first ("Installing Rosetta 2…"),
+    best-effort/fail-open. `SystemProcessRunner` maps `EBADARCH` → "Rosetta 2 isn't installed."
+  - **Prompted, not just silent:** onboarding gains an "Install Rosetta 2" step (only when it was missing at
+    launch; locks Set up until done), and a set-up library shows a "Rosetta 2 is required" alert (Install /
+    Not Now, asks again next launch). State lives on `AppEnvironment` (`rosettaReady`, `installRosetta()`).
+  - ⚠️ **macOS 27 moved `oahd` to the sealed volume (`/usr/libexec/rosetta/oahd`, present even WITHOUT
+    Rosetta)** — the classic `/Library/Apple/usr/libexec/oahd` probe is gone. The probe keys off the package
+    payload `/Library/Apple/usr/libexec/oah/libRosettaRuntime` (legacy path kept for ≤26).
+  - Toolchain: CI runs on the `xcode-27` runner (macOS 27, `Xcode_${XCODE_VERSION}.app`); local builds pin the
+    SDK via `Scripts/sdk-env.sh` (`SDKROOT` from `MACOS_SDK_VERSION`). Both live in `versions.env`. Swift 6.4
+    surfaced two implicit-strong-capture warnings (GraphicsFallback, LogViewerView) — fixed.
+
 - **🔧 Three fixes ported from Dino0005' fork of Silo (2026-08-05; 520 tests green, zero warnings).** The
   fork (branched 2026-07-15, so it predates the whole DXVK backend) was reviewed commit by commit; most of it
   was rejected — an updater repointed at the fork, a script that lifts Wine out of an installed CrossOver.app

@@ -24,12 +24,21 @@ concurrency:
 
 jobs:
   app:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     env:
       HAS_NOTARY: ${{ secrets.AC_API_KEY_ID }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select Xcode + macOS SDK (versions.env)
+        run: |
+          set -eo pipefail
+          set -a; . ./versions.env; set +a
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+          . ./Scripts/sdk-env.sh
+          echo "SDKROOT=$SDKROOT" >> "$GITHUB_ENV"
+          xcodebuild -version
 
       - name: Show toolchain
         run: swift --version

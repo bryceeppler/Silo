@@ -12,6 +12,7 @@ APP="dist/$APP_NAME.app"
 # the assembled app always matches, then read the marketing version for the Info.plist.
 ./Scripts/gen-versions.sh
 set -a; . ./versions.env; set +a
+. ./Scripts/sdk-env.sh
 VERSION="$SILO_VERSION"
 BUILD=$(date +%Y%m%d%H%M)
 

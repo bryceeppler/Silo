@@ -40,9 +40,9 @@ concurrency:
 
 jobs:
   build:
-    # macos-26 matches the app build (release.yml) + the runtime's deploy target (macOS 26). The build is
+    # xcode-27 (macOS 27 + Xcode 27, pinned via versions.env) matches the app build (release.yml). The build is
     # x86_64 under Rosetta regardless of the runner's host arch.
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 180
     env:
       # CrossOver is x86_64 (runs on Apple Silicon via Rosetta); build the x86_64 Wine.
@@ -50,6 +50,15 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select Xcode + macOS SDK (versions.env)
+        run: |
+          set -eo pipefail
+          set -a; . ./versions.env; set +a
+          sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+          . ./Scripts/sdk-env.sh
+          echo "SDKROOT=$SDKROOT" >> "$GITHUB_ENV"
+          xcodebuild -version
 
       - name: Install Rosetta 2
         run: softwareupdate --install-rosetta --agree-to-license || true

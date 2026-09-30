@@ -37,6 +37,8 @@ set -a
 # shellcheck disable=SC1091  # versions.env is resolved at runtime, not available to the linter
 . "$ROOT/versions.env"
 set +a
+# shellcheck disable=SC1091
+. "$ROOT/Scripts/sdk-env.sh"
 
 VER="${1:-$DXVK_VERSION}"
 # Per-wine tag (matches CI): DXVK is wine-independent, but we tag by the CrossOver wine it's validated with,

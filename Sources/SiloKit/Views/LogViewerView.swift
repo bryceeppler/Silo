@@ -91,7 +91,7 @@ final class LogTailer {
             await MainActor.run { [weak self] in
                 guard let self, self.generation == expected else { return }   // superseded start/stop won
                 self.contents = tail
-                self.watch = FileWatch(url: url) {
+                self.watch = FileWatch(url: url) { [weak self] in
                     let tail = url.tailString(maxBytes: logTailBytes)   // read off the main actor
                     Task { @MainActor [weak self] in self?.enqueue(tail) }
                 }

@@ -303,8 +303,12 @@ Write the exact question into `STATUS.md` → `## BLOCKED`, commit the last gree
 - A material product/legal ambiguity where guessing risks rework.
 - Anything needing SIP disable / Full Disk Access / a TCC prompt the agent can't satisfy headlessly.
 
-## Environment (verified 2026-06-26; runtimes added 2026-07-13; GPTK 4.0b2 added 2026-08-04)
-Swift 6.3.2 (`arm64-apple-macosx26.0`); macOS 26.6, Apple Silicon; `xcodebuild` absent;
+## Environment (verified 2026-06-26; runtimes added 2026-07-13; GPTK 4.0b2 added 2026-08-04; macOS 27 2026-09-26)
+**Now macOS 27.0 (26A428) + Xcode 27.0, Swift 6.4.** Toolchain pins (`XCODE_VERSION`, `MACOS_SDK_VERSION`) live
+in `versions.env`; every build script sources `Scripts/sdk-env.sh` (exports `SDKROOT`), CI runs on the
+`xcode-27` runner. Still build with SwiftPM only (constraint #1). **Rosetta 2 is required** (the runtimes are
+x86_64) and setup installs it (`Rosetta`, issue #7).
+*Original:* Swift 6.3.2 (`arm64-apple-macosx26.0`); macOS 26.6, Apple Silicon; `xcodebuild` absent;
 `git`/`codesign` present. **The dev box now HAS a provisioned Silo bottle + all three runtimes** at
 `~/Library/Application Support/Silo` (`Runtimes/`: `GPTK-4.0_beta_1` **and `GPTK-4.0_beta_2`** — both kept,
 so the GPTK Manager's default radio is a one-click A/B — plus `dxmt-v0.72-cx26.2.0`, `wine-cx-26.2.0`;
